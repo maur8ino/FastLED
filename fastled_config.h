@@ -61,5 +61,7 @@
 #define FASTLED_INTERRUPT_RETRY_COUNT 2
 #endif
 
+// Use this to add RGBW support to the clockless ESP8266 driver
+// #define FASTLED_RGBW
 
 #endif
