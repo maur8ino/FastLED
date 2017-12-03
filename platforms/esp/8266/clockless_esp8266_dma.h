@@ -287,11 +287,10 @@ protected:
         // Setup the pixel controller and load/scale the first byte
         pixels.preStepFirstByteDithering();
 
-        //register uint32_t b = pixels.loadAndScale0();
-
-        // for some reason this was double called in the original controller....
-        //pixels.preStepFirstByteDithering();
-
+#ifdef FASTLED_RGBW
+        register  uint32_t minc;
+        register out_4px output;
+        output.c0 = pixels.loadAndScale0();
 
         const uint16_t bitpatterns[16] =
                 {
@@ -302,13 +301,14 @@ protected:
                 };
 
         uint16_t* pDma = (uint16_t*)i2sBuffer;
+#else
+        register uint32_t b = pixels.loadAndScale0();
+        pixels.preStepFirstByteDithering();
+#endif
+
 
         while(pixels.has(1)) {
 #ifdef FASTLED_RGBW
-            register  uint32_t minc;
-            register out_4px output;
-
-            output.c0 = pixels.loadAndScale0();
             output.c1 = pixels.loadAndScale1();
             output.c2 = pixels.loadAndScale2();
 
@@ -319,13 +319,21 @@ protected:
             pDma = writeBits(pDma, output.c1 - minc);
             pDma = writeBits(pDma, output.c2 - minc);
             pDma = writeBits(pDma, minc);
+
+            output.c0 = pixels.advanceAndLoadAndScale0();
 #else
-            pDma = writeBits(pDma, pixels.loadAndScale0());
-            pDma = writeBits(pDma, pixels.loadAndScale1());
-            pDma = writeBits(pDma, pixels.loadAndScale2());
+
+            pDma = writeBits(pDma, b);
+
+            b = pixels.loadAndScale1();
+            pDma = writeBits(pDma, b);
+
+            b = pixels.loadAndScale2();
+            pDma = writeBits(pDma, b);
+
+            b = pixels.advanceAndLoadAndScale0();
 #endif // FASTLED_RGBW
 
-            pixels.advanceData();
             pixels.stepDithering();
         };
 #ifdef FASTLED_DEBUG_COUNT_FRAME_RETRIES

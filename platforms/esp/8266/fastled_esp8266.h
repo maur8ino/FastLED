@@ -2,9 +2,8 @@
 
 #include "fastpin_esp8266.h"
 
-#ifdef FASTLED_RGBW
+#ifdef FASTLED_ESP8266_DMA
 #include "clockless_esp8266_dma.h"
-//#include "clockless_esp8266_rgbw.h"
 #else
 #include "clockless_esp8266.h"
 #endif
