@@ -2,8 +2,11 @@
 
 FASTLED_NAMESPACE_BEGIN
 
-#define ELEMENT_BUFFER_COUNT 180
+#ifdef FASTLED_RGBW
 #define BYTES_PER_ELEMENT 4
+#else
+#define BYTES_PER_ELEMENT 3
+#endif
 
 #ifdef FASTLED_DEBUG_COUNT_FRAME_RETRIES
 extern uint32_t _frame_cnt;
@@ -110,11 +113,17 @@ class ClocklessController : public CPixelLEDController<RGB_ORDER> {
     data_ptr_t mPort;
     CMinWait<WAIT_TIME> mWait;
 public:
-    virtual void init() {
+    virtual void init() {}
+    virtual void initLedBuffers() override {
+        this->InitI2S();
+    }
+
+    void InitI2S()
+    {
         uint16_t dmaPixelSize = c_dmaBytesPerPixelBytes * BYTES_PER_ELEMENT;
 
-        _pixelsSize = ELEMENT_BUFFER_COUNT * BYTES_PER_ELEMENT;
-        _i2sBufferSize = ELEMENT_BUFFER_COUNT * dmaPixelSize;
+        _pixelsSize = this->size() * BYTES_PER_ELEMENT;
+        _i2sBufferSize = this->size() * dmaPixelSize;
 
         _i2sBuffer = (uint8_t*)malloc(_i2sBufferSize);
         memset(_i2sBuffer, 0x00, _i2sBufferSize);
@@ -127,10 +136,7 @@ public:
         _i2sBufDesc = (slc_queue_item*)malloc(_i2sBufDescCount * sizeof(slc_queue_item));
 
         s_this = this; // store this for the ISR
-        InitI2S();
-    }
-    void InitI2S()
-    {
+
         StopDma();
         _dmaState = NeoDmaState_Sending; // start off sending empty buffer
 
@@ -280,12 +286,11 @@ protected:
     static uint32_t ICACHE_RAM_ATTR showRGBInternal(uint16_t* i2sBuffer, PixelController<RGB_ORDER> pixels) {
         // Setup the pixel controller and load/scale the first byte
         pixels.preStepFirstByteDithering();
-        register out_4px output;
 
         //register uint32_t b = pixels.loadAndScale0();
-        register  uint32_t minc;
-        output.c0 = pixels.loadAndScale0();
-        pixels.preStepFirstByteDithering();
+
+        // for some reason this was double called in the original controller....
+        //pixels.preStepFirstByteDithering();
 
 
         const uint16_t bitpatterns[16] =
@@ -299,7 +304,11 @@ protected:
         uint16_t* pDma = (uint16_t*)i2sBuffer;
 
         while(pixels.has(1)) {
+#ifdef FASTLED_RGBW
+            register  uint32_t minc;
+            register out_4px output;
 
+            output.c0 = pixels.loadAndScale0();
             output.c1 = pixels.loadAndScale1();
             output.c2 = pixels.loadAndScale2();
 
@@ -310,10 +319,13 @@ protected:
             pDma = writeBits(pDma, output.c1 - minc);
             pDma = writeBits(pDma, output.c2 - minc);
             pDma = writeBits(pDma, minc);
+#else
+            pDma = writeBits(pDma, pixels.loadAndScale0());
+            pDma = writeBits(pDma, pixels.loadAndScale1());
+            pDma = writeBits(pDma, pixels.loadAndScale2());
+#endif // FASTLED_RGBW
 
-            output.c0 = pixels.advanceAndLoadAndScale0();
-
-
+            pixels.advanceData();
             pixels.stepDithering();
         };
 #ifdef FASTLED_DEBUG_COUNT_FRAME_RETRIES
