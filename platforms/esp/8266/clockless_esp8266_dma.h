@@ -287,10 +287,7 @@ protected:
         // Setup the pixel controller and load/scale the first byte
         pixels.preStepFirstByteDithering();
 
-#ifdef FASTLED_RGBW
-        register  uint32_t minc;
-        register out_4px output;
-        output.c0 = pixels.loadAndScale0();
+        uint16_t* pDma = (uint16_t*)i2sBuffer;
 
         const uint16_t bitpatterns[16] =
                 {
@@ -300,7 +297,11 @@ protected:
                         0b1110111010001000, 0b1110111010001110, 0b1110111011101000, 0b1110111011101110,
                 };
 
-        uint16_t* pDma = (uint16_t*)i2sBuffer;
+#ifdef FASTLED_RGBW
+        register  uint32_t minc;
+        register out_4px output;
+        output.c0 = pixels.loadAndScale0();
+
 #else
         register uint32_t b = pixels.loadAndScale0();
         pixels.preStepFirstByteDithering();
