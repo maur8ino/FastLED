@@ -9,11 +9,19 @@ For ESP8266, this fork supports RGBW SK6812 strips.  This implementation makes u
 
 So far, I've been using this on two of my personal projects and it looks fantastic.  Much better, IMHO, than just RGB alone.
 
+To use this, add this define somewhere above where you `#include <FastLED.h>`:
+
+`#define FASTLED_RGBW`
+
 Note that when FastLED supports RGBW natively, I'll discontinue this code and make the switch.
 
 ## ESP8266 DMA support
 
 In order to fix some annoying flicker issues, I added DMA support for ESP8266.  This only works for GPIO pin 3 (commonly found as the "RX" pin on many dev boards).  It has only been tested for SK6812 and WS2812b--the longest strip I've used so far is 300 LEDs and so far its been buttery smooth with zero flicker.  Note: It will not work with FastLED's multi-channel stuff.
+
+To use this, add this define somewhere above where you `#include <FastLED.h>`:
+
+`#define FASTLED_ESP8266_DMA`
 
 
 ---
